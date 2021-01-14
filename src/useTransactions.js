@@ -1,24 +1,32 @@
-import { useContext } from "react";
-import { expenseTrackerContext } from "./context/context";
-import { incomeCategories, expenseCategories, resetCategories } from "./constants/categories";
+import { useContext } from 'react';
+import { ExpenseTrackerContext } from './context/context';
 
+import { incomeCategories, expenseCategories, resetCategories } from './constants/categories';
 
 const useTransactions = (title) => {
-    resetCategories();
+  resetCategories();
+  const { transactions } = useContext(ExpenseTrackerContext);
+  const rightTransactions = transactions.filter((t) => t.type === title);
+  const total = rightTransactions.reduce((acc, currVal) => acc += currVal.amount, 0);
+  const categories = title === 'Income' ? incomeCategories : expenseCategories;
 
-    const { transactions } = useContext(expenseTrackerContext);
-    const transactionsPerType = transactions.filter((t) => t.type === title);
-    const total = transactionsPerType.reduce((acc, currVal) => acc += currVal.amount, 0 );
-    const categories = title === 'income' ? incomeCategories : expenseCategories;
+  rightTransactions.forEach((t) => {
+    const category = categories.find((c) => c.type === t.category);
 
-    console.log({transactionsPerType, total, categories});
+    if (category) category.amount += t.amount;
+  });
 
-    //Reduce is used to SUM
-    // [2,2,3,2] => 9 
+  const filteredCategories = categories.filter((sc) => sc.amount > 0);
 
-    transactionsPerType.forEach((t) => {
-        const category = categories.find((c) => c.type === t.category)
+  const chartData = {
+    datasets: [{
+      data: filteredCategories.map((c) => c.amount),
+      backgroundColor: filteredCategories.map((c) => c.color),
+    }],
+    labels: filteredCategories.map((c) => c.type),
+  };
 
-        if(category) category.amount += t.amount;
-    })
-}
+  return { filteredCategories, total, chartData };
+};
+
+export default useTransactions;
